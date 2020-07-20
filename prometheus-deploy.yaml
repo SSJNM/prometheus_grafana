@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-lb
+  labels:
+    app: prometheus_grafana
+spec:
+  selector:
+    app: prometheus_grafana
+  type: LoadBalancer
+  ports:
+  - port: 9090 
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-deploy
+  labels:
+    app: prometheus_grafana
+spec:
+  selector:
+    matchLabels:
+      app: prometheus_grafana
+      env: monitoring
+  template:  
+    metadata:
+      labels:
+        app: prometheus_grafana
+        env: monitoring
+    spec:
+      containers:
+      - image: ssjnm/ssjnm-prometheus
+        name: prometheus
+        ports:
+        - containerPort: 9090
+          name: 
+        volumeMounts:
+        - name: prometheus-mount
+          mountPath: "/promconfig/data"
+        - name: prometheus-config
+          mountPath: "/promconfig"
+          readOnly: true 
+      volumes:
+      - name: prometheus-mount
+        persistentVolumeClaim:
+          claimName: prometheus-pvc
+      - name: prometheus-config
+        configMap:
+          name: promconfig
+          items:
+          -  key: "prometheus.yml"
+             path: "prometheus.yml"

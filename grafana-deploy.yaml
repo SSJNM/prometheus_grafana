@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-lb
+  labels:
+    app: prometheus_grafana
+spec:
+  ports:
+    - port: 3000
+  selector:
+    app: prometheus_grafana
+  type: LoadBalancer
+---
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: grafana-deploy
+  labels:
+    app: prometheus_grafana
+    env: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: prometheus_grafana
+      env: monitoring
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: prometheus_grafana
+        env: monitoring
+    spec:
+      containers:
+      - image: ssjnm/ssjnm-grafana
+        name: grafana
+        ports:
+        - containerPort: 3000
+          name: grafana
+        volumeMounts:
+        - name: grafana-mount1
+          mountPath: /var/lib/grafana
+        - name: grafana-mount2
+          mountPath: /etc/grafana
+        - name: grafana-mount3
+          mountPath: /var/log/grafana
+      volumes:
+      - name: grafana-mount1
+        persistentVolumeClaim:
+          claimName: grafana-pvc1
+      - name: grafana-mount2
+        persistentVolumeClaim:
+          claimName: grafana-pvc2
+      - name: grafana-mount3
+        persistentVolumeClaim:
+          claimName: grafana-pvc3
